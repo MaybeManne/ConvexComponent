@@ -1,0 +1,27 @@
+{
+  "name": "@convex-browser-use/component",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Convex Component for durable browser automation",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "convex": "./convex.config.ts",
+  "files": [
+    "dist",
+    "convex",
+    "convex.config.ts"
+  ],
+  "scripts": {
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@convex-dev/workflow": "^0.2.0",
+    "convex": "^1.17.0"
+  },
+  "devDependencies": {
+    "typescript": "^5.3.3"
+  },
+  "peerDependencies": {
+    "convex": "^1.17.0"
+  }
+}
