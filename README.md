@@ -1,75 +1,6 @@
-# Browser Use — Durable Convex Component
+# Browser Use - Durable Convex Component
 
-A **durable browser automation component** built with the new **Convex Components SDK**.
-
-Run natural language browser tasks that execute to completion — even if the page refreshes, the client disconnects, or the server restarts.
-
----
-
-## What It Does
-
-Give the agent a task like:
-
-> "Go to Google Flights and find the cheapest nonstop flight from JFK to LHR tomorrow."
-
-Click **Run**.
-
-The task executes in a **durable Convex workflow** that orchestrates Browser Use Cloud until it reaches a terminal state:
-
-- `queued`
-- `running`
-- `succeeded`
-- `failed`
-- `canceled`
-
-The UI displays:
-
-- Live timeline updates  
-- Incremental screenshots  
-- Structured result payload  
-- Explicit error states  
-
-### Key Property: Durability
-
-Tasks continue running even if:
-
-- You refresh the page  
-- You close the browser  
-- The frontend disconnects  
-
-Execution lives server-side. The UI simply reconnects.
-
----
-
-## Architecture
-
-```
-Next.js Frontend
-    ↓ (Reactive Queries — No Polling)
-Convex Public API (queries + mutations)
-    ↓
-Durable Workflow (Scheduler-driven loop)
-    ↓
-Provider Layer (Browser Use Cloud API)
-    ↓
-Remote Browser Execution
-```
-
-### Design Principles
-
-- No client polling
-- No long-lived browser sessions
-- All state persisted in Convex
-- Idempotent state transitions
-- Explicit cancellation support
-- Provider abstraction boundary
-- Server-only secret handling
-
----
-
-## Quick Start
-
-### 1. Clone & Install
+## Quick Start (Run It in ~3 Minutes)
 
 ```bash
 git clone <repo-url>
@@ -77,44 +8,22 @@ cd ConvexComponent
 npm install
 ```
 
----
-
-### 2. Start Convex
+Start Convex:
 
 ```bash
 cd example
 npx convex dev
 ```
 
-This will:
-
-- Create a Convex project (if needed)
-- Generate `NEXT_PUBLIC_CONVEX_URL`
-- Start the backend dev server
-
----
-
-### 3. Set Browser Use API Key (Server-Side Only)
+Set your Browser Use API key (server side only):
 
 ```bash
 npx convex env set BROWSER_USE_API_KEY <your_browser_use_api_key>
 ```
 
-The API key:
-
-- Is stored in Convex environment variables
-- Is never exposed to the browser
-- Is only accessed inside Convex actions
-
-David can use his own Browser Use API key.  
-Nothing in this repo hardcodes credentials.
-
----
-
-### 4. Run the App
+Then run the frontend:
 
 ```bash
-cd example
 npm run dev
 ```
 
@@ -124,28 +33,91 @@ Open:
 http://localhost:3000
 ```
 
+That’s it.
+
 ---
 
-## Verify Durability
+## What This Is
 
-1. Start a task  
-2. Refresh the page mid-run  
-3. Observe the task continues  
-4. UI reconnects and shows live state  
+This is a durable browser automation component built using the new Convex Components SDK.
 
-If the server restarts, Convex resumes automatically.
+You give it a task like:
+
+> "Go to Google Flights and find the cheapest nonstop flight from JFK to LHR tomorrow."
+
+Click **Run**.
+
+The task executes inside a durable Convex workflow that orchestrates Browser Use Cloud until it reaches a terminal state:
+
+- queued  
+- running  
+- succeeded  
+- failed  
+- canceled  
+
+The UI shows:
+
+- live timeline updates  
+- incremental screenshots  
+- structured result payload  
+- explicit error states  
+
+---
+
+## The Important Part
+
+Tasks keep running even if:
+
+- you refresh the page  
+- you close the browser  
+- the client disconnects  
+
+Execution lives entirely on the backend.  
+The UI just reconnects to state.
+
+If the server restarts, Convex resumes the workflow automatically.
+
+No polling. No hacks. No fragile browser sessions.
+
+---
+
+## Architecture
+
+```
+Next.js Frontend
+      ↓
+Convex Queries + Mutations
+      ↓
+Durable Workflow Loop
+      ↓
+Provider Layer
+      ↓
+Browser Use Cloud
+```
+
+Design constraints I followed:
+
+- no client polling  
+- idempotent state transitions  
+- explicit cancellation checks  
+- cursor-based progress deduplication  
+- provider abstraction boundary  
+- server-only secret handling  
+
+Browser Use handles execution.  
+Convex handles orchestration, durability, and persistence.
 
 ---
 
 ## Public API
 
-### `startTask({ prompt, options? })`
+### startTask({ prompt, options? })
 
-Creates a task record and begins workflow execution.
+Creates the task record and starts the durable workflow.
 
 ```ts
 await ctx.runMutation(api.tasks.startTask, {
-  prompt: "Find cheapest nonstop JFK → LHR flight tomorrow",
+  prompt: "Find cheapest nonstop JFK to LHR flight tomorrow",
   options: {
     timeoutMs: 300000,
     pollIntervalMs: 2000,
@@ -155,7 +127,7 @@ await ctx.runMutation(api.tasks.startTask, {
 
 ---
 
-### `getTask({ taskId })`
+### getTask({ taskId })
 
 Reactive query returning:
 
@@ -173,64 +145,57 @@ Reactive query returning:
 
 ---
 
-### `listTasks({ limit?, cursor? })`
+### listTasks({ limit?, cursor? })
 
 Paginated task history.
 
 ---
 
-### `cancelTask({ taskId })`
+### cancelTask({ taskId })
 
 Gracefully cancels a running workflow.
 
 ---
 
-## Execution Model
+## Execution Flow
 
-1. `startTask` inserts DB record  
-2. Durable workflow initializes Browser Use session  
-3. Poll loop fetches provider state  
-4. Progress appended incrementally  
-5. Screenshots stored as they arrive  
-6. Terminal state persisted  
+1. startTask inserts DB record  
+2. workflow initializes Browser Use session  
+3. poll loop fetches provider state  
+4. progress events appended incrementally  
+5. screenshots stored as they arrive  
+6. terminal state persisted  
 
-All transitions are idempotent.  
+All transitions are safe to replay.  
 Workflow is scheduler-driven and restart-safe.
 
 ---
 
-## What This Demonstrates
+## Security
 
-- Durable agent orchestration
-- Convex Components SDK integration
-- Scheduler-based workflow control
-- Cursor-based progress deduplication
-- Safe cancellation
-- Server-side secret isolation
-- Deterministic test mode
-- Fully reactive UI (no polling)
+The `BROWSER_USE_API_KEY`:
 
-This converts stateless browser automation into durable infrastructure.
+- is stored in Convex environment variables  
+- never goes to the browser  
+- never gets logged  
+- is only accessed inside Convex actions  
+
+You can use your own Browser Use key. Nothing is hardcoded.
 
 ---
 
 ## Testing
 
-Run deterministic test mode:
+Deterministic test mode:
 
 ```bash
 BROWSER_USE_TEST_MODE=1 npx convex dev
 ```
 
-Run E2E tests:
+Run tests:
 
 ```bash
 npm run test
-```
-
-Run backend smoke tests:
-
-```bash
 npm run test:backend
 ```
 
@@ -238,22 +203,16 @@ Test mode does not call the real Browser Use API.
 
 ---
 
-## Deployment
+## Deploying
 
-### Deploy Convex
+Deploy backend:
 
 ```bash
 cd example
 npx convex deploy
 ```
 
-Set:
-
-- `BROWSER_USE_API_KEY`
-
----
-
-### Deploy Frontend (Vercel)
+Deploy frontend (Vercel):
 
 ```bash
 cd example
@@ -262,27 +221,25 @@ vercel
 
 Set:
 
-- `NEXT_PUBLIC_CONVEX_URL`
+- BROWSER_USE_API_KEY in Convex  
+- NEXT_PUBLIC_CONVEX_URL in Vercel  
 
-API keys remain server-side.
+Secrets stay server-side.
 
 ---
 
-## Why This Matters
+## Why I Built It This Way
 
 Browser Use alone is stateless.
 
-This component wraps it in:
+I wrapped it in a durable workflow layer so:
 
-- Durable execution  
-- Persistent state  
-- Workflow resilience  
-- Reactive UI synchronization  
+- tasks survive refresh  
+- state persists  
+- execution is resumable  
+- cancellation is safe  
+- UI stays reactive  
 
-It transforms browser automation into production-ready agent infrastructure — suitable for real autonomous workflows inside products like Bloom.
+This turns browser automation into production-ready agent infrastructure.
 
----
-
-## License
-
-MIT
+That’s the point.
