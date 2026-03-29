@@ -4,6 +4,7 @@ import { internalAction } from "./_generated/server";
 import { v } from "convex/values";
 import { internal, components } from "./_generated/api";
 import { claudeDecide, claudeSynthesize } from "./claudeHelpers";
+import { notifySlack } from "./slackNotify";
 
 // ============================================================================
 // BROWSER USE COMPONENT HELPERS
@@ -200,6 +201,17 @@ export const runBrowserAgent = internalAction({
               content: synthesized,
               status: "complete",
               progressEvent: "Complete",
+            });
+
+            // Send result to Slack if configured
+            const screenshots = task.screenshots ?? [];
+            await notifySlack({
+              userMessage,
+              result: synthesized,
+              sources: sourceMatches.map((m: string) =>
+                m.replace(/\*?\*?Sources?\*?\*?:?\s*/i, "").trim()
+              ).filter((s: string) => s.length > 3),
+              screenshots,
             });
           } else {
             await ctx.runMutation(internal.aria.updateMessage, {

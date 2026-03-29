@@ -17,6 +17,7 @@ import { createLLMProvider } from './lib/llm/index.mjs';
 import { generateLLMIdeas } from './lib/llm/ideas.mjs';
 import { TelegramAlerter } from './lib/alerts/telegram.mjs';
 import { DiscordAlerter } from './lib/alerts/discord.mjs';
+import { SlackAlerter } from './lib/alerts/slack.mjs';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const ROOT = __dirname;
@@ -43,6 +44,7 @@ const memory = new MemoryManager(RUNS_DIR);
 const llmProvider = createLLMProvider(config.llm);
 const telegramAlerter = new TelegramAlerter(config.telegram);
 const discordAlerter = new DiscordAlerter(config.discord || {});
+const slackAlerter = new SlackAlerter(config.slack || {});
 
 if (llmProvider) console.log(`[Meridian] LLM enabled: ${llmProvider.name} (${llmProvider.model})`);
 if (telegramAlerter.isConfigured) {
@@ -436,6 +438,11 @@ async function runSweepCycle() {
           console.error('[Meridian] Discord alert error:', err.message);
         });
       }
+      if (slackAlerter.isConfigured) {
+        slackAlerter.evaluateAndAlert(llmProvider, delta, memory).catch(err => {
+          console.error('[Meridian] Slack alert error:', err.message);
+        });
+      }
     }
 
     // Prune old alerted signals
@@ -474,6 +481,7 @@ async function start() {
   ║  LLM:        ${(config.llm.provider || 'disabled').padEnd(31)}║
   ║  Telegram:   ${config.telegram.botToken ? 'enabled' : 'disabled'}${' '.repeat(config.telegram.botToken ? 24 : 23)}║
   ║  Discord:    ${config.discord?.botToken ? 'enabled' : config.discord?.webhookUrl ? 'webhook only' : 'disabled'}${' '.repeat(config.discord?.botToken ? 24 : config.discord?.webhookUrl ? 20 : 23)}║
+  ║  Slack:      ${config.slack?.webhookUrl ? 'enabled' : 'disabled'}${' '.repeat(config.slack?.webhookUrl ? 24 : 23)}║
   ╚══════════════════════════════════════════════╝
   `);
 
